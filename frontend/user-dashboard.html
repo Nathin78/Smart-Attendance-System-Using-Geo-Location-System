@@ -1,0 +1,231 @@
+﻿<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>User Dashboard | Smart Attendance</title>
+    <script src="js/local-dev.js"></script>
+    <link rel="icon" href="favicon.svg" type="image/svg+xml">
+    <link rel="preconnect" href="https://fonts.googleapis.com">
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+    <link href="https://fonts.googleapis.com/css2?family=Poppins:wght@400;600;700&family=Space+Grotesk:wght@500;700&display=swap" rel="stylesheet">
+    <link rel="stylesheet" href="css/styles.css">
+</head>
+<body>
+<header class="site-header">
+    <div class="site-header-inner">
+        <a class="site-brand" href="user-dashboard.html">Smart Attendance</a>
+        <nav class="site-nav" aria-label="Dashboard pages">
+            <a href="about.html">About Us</a>
+            <a href="contact.html">Contact Us</a>
+        </nav>
+    </div>
+</header>
+<main class="page-wrap">
+    <section class="topbar">
+        <div>
+            <h1>User Dashboard</h1>
+            <p class="subtext">Welcome back, <strong id="welcomeName"></strong> (<span id="userEmail"></span>)</p>
+        </div>
+        <div class="actions">
+            <div class="live-datetime" id="headerDateTime"></div>
+            <button class="btn-primary" id="markAttendanceBtn">Go to Attendance Page</button>
+            <div class="header-tools">
+                <button class="theme-toggle-btn" id="themeToggleBtn" type="button">Theme: Teal Ocean</button>
+                <div class="profile-menu">
+                    <button class="profile-btn" id="profileBtn" type="button">
+                        <span class="avatar" id="profileAvatar">U</span>
+                        <span id="profileNameShort">User</span>
+                    </button>
+                    <div class="profile-dropdown" id="profileDropdown">
+                        <p class="profile-name" id="profileName">-</p>
+                        <p class="profile-email" id="profileEmail">-</p>
+                        <p class="profile-role">Role: <strong id="profileRole">-</strong></p>
+                        <button class="btn-secondary btn-small" id="profileEditBtn" type="button" hidden>Edit Profile</button>
+                        <button class="btn-danger" id="profileLogoutBtn" type="button">Logout</button>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </section>
+
+    <section class="grid cols-2">
+        <article class="card">
+            <h2>Assigned Geofence</h2>
+            <p class="subtext">Center: <span id="geoCenter">-</span></p>
+            <p class="subtext">Radius: <span id="geoRadius">-</span></p>
+        </article>
+
+        <article class="card">
+            <h2>Quick Tips</h2>
+            <p class="subtext">Enable high-accuracy GPS for reliable marking.</p>
+            <p class="subtext">Attendance can be marked only once per day and only within the allowed radius.</p>
+        </article>
+    </section>
+
+    <section class="grid cols-5" style="margin-top: 18px;">
+        <article class="stat">
+            <h3>Total Records</h3>
+            <p id="statTotal">0</p>
+        </article>
+        <article class="stat">
+            <h3>Present</h3>
+            <p id="statPresent">0</p>
+        </article>
+        <article class="stat">
+            <h3>Late</h3>
+            <p id="statLate">0</p>
+        </article>
+        <article class="stat">
+            <h3>Last Marked</h3>
+            <p id="statLast">-</p>
+        </article>
+        <article class="stat">
+            <h3>Best Streak</h3>
+            <p id="statStreak">0 days</p>
+        </article>
+    </section>
+
+    <section class="grid cols-2" style="margin-top: 18px;">
+        <article class="card">
+            <h2>Today Status</h2>
+            <p class="subtext" id="todayStatus">Checking...</p>
+        </article>
+        <article class="card">
+            <h2>Monthly Completion</h2>
+            <p class="subtext" id="attendanceRate">0%</p>
+        </article>
+    </section>
+
+    <section class="grid cols-2" style="margin-top: 18px;">
+        <article class="card">
+            <h2>Monthly Snapshot</h2>
+            <div class="grid cols-4">
+                <article class="stat compact">
+                    <h3>Current Streak</h3>
+                    <p id="statCurrentStreak">0 days</p>
+                </article>
+                <article class="stat compact">
+                    <h3>This Month</h3>
+                    <p id="statMonthRecords">0</p>
+                </article>
+                <article class="stat compact">
+                    <h3>Month Present</h3>
+                    <p id="statMonthPresent">0</p>
+                </article>
+                <article class="stat compact">
+                    <h3>Month Late</h3>
+                    <p id="statMonthLate">0</p>
+                </article>
+            </div>
+        </article>
+        <article class="card">
+            <h2>Recent Activity</h2>
+            <p class="subtext">Latest attendance marks across the month.</p>
+            <div id="recentActivityList" class="activity-list"></div>
+        </article>
+    </section>
+
+    <section class="grid cols-2" style="margin-top: 18px;">
+        <article class="card">
+            <h2>Apply for Leave</h2>
+            <p class="subtext">Submit a leave request for approval before your attendance is affected.</p>
+            <form id="leaveRequestForm" class="stacked-form">
+                <div>
+                    <label for="leaveStartDate">Start Date</label>
+                    <input id="leaveStartDate" type="date" required>
+                </div>
+                <div>
+                    <label for="leaveEndDate">End Date</label>
+                    <input id="leaveEndDate" type="date" required>
+                </div>
+                <div>
+                    <label for="leaveReason">Reason</label>
+                    <textarea id="leaveReason" placeholder="Reason for leave" minlength="10" maxlength="500" required></textarea>
+                </div>
+                <button class="btn-primary" type="submit">Submit Leave Request</button>
+            </form>
+            <div id="leaveAlert" class="alert"></div>
+        </article>
+        <article class="card">
+            <h2>My Leave Requests</h2>
+            <p class="subtext">Track the status of your leave applications.</p>
+            <div class="table-wrap">
+                <table>
+                    <thead>
+                    <tr>
+                        <th>Range</th>
+                        <th>Status</th>
+                        <th>Reason</th>
+                        <th>Admin Comment</th>
+                    </tr>
+                    </thead>
+                    <tbody id="leaveRequestRows"></tbody>
+                </table>
+            </div>
+        </article>
+    </section>
+
+    <section class="card" style="margin-top: 18px;">
+        <h2>Attendance History</h2>
+        <div class="actions" style="margin-bottom: 10px;">
+            <div>
+                <label for="monthFilter">Month</label>
+                <input id="monthFilter" type="month">
+            </div>
+            <div>
+                <label for="statusFilter">Status</label>
+                <select id="statusFilter">
+                    <option value="ALL">All</option>
+                    <option value="PRESENT">Present</option>
+                    <option value="LATE">Late</option>
+                </select>
+            </div>
+            <div>
+                <label for="searchFilter">Search</label>
+                <input id="searchFilter" type="text" placeholder="Date, note, or location">
+            </div>
+            <div>
+                <label for="sortFilter">Sort</label>
+                <select id="sortFilter">
+                    <option value="NEWEST">Newest first</option>
+                    <option value="OLDEST">Oldest first</option>
+                </select>
+            </div>
+            <button class="btn-secondary" id="resetFiltersBtn" type="button">Reset Filters</button>
+            <button class="btn-primary" id="downloadMyReportBtn" type="button">Download My CSV</button>
+        </div>
+        <p class="subtext">Showing <strong id="filteredCount">0</strong> records</p>
+        <div id="dashboardAlert" class="alert"></div>
+        <div class="table-wrap">
+            <table>
+                <thead>
+                <tr>
+                    <th>Date</th>
+                    <th>Time</th>
+                    <th>Status</th>
+                    <th>Location</th>
+                    <th>Distance</th>
+                    <th>Accuracy</th>
+                    <th>Note</th>
+                </tr>
+                </thead>
+                <tbody id="attendanceRows"></tbody>
+            </table>
+        </div>
+    </section>
+</main>
+<footer class="site-footer">
+    <div class="site-footer-inner">
+        <span>&copy; 2026 Smart Attendance</span>
+        <span class="footer-links">
+            <a href="about.html">About Us</a>
+            <a href="contact.html">Contact Us</a>
+        </span>
+    </div>
+</footer>
+<script src="js/config.js"></script>
+<script src="js/api.js"></script>
+<script src="js/user-dashboard.js"></script>
+</body>
+</html>

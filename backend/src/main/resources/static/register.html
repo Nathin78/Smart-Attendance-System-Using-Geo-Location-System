@@ -1,0 +1,64 @@
+﻿<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Register | Smart Attendance</title>
+    <script src="js/local-dev.js"></script>
+    <link rel="icon" href="favicon.svg" type="image/svg+xml">
+    <link rel="preconnect" href="https://fonts.googleapis.com">
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+    <link href="https://fonts.googleapis.com/css2?family=Poppins:wght@400;600;700&family=Space+Grotesk:wght@500;700&display=swap" rel="stylesheet">
+    <link rel="stylesheet" href="css/styles.css">
+</head>
+<body>
+<header class="site-header">
+    <div class="site-header-inner">
+        <a class="site-brand" href="login.html">Smart Attendance</a>
+    </div>
+</header>
+<div class="auth-container">
+    <div class="card">
+        <div class="topbar" style="margin-bottom: 8px;">
+            <div class="live-datetime" id="headerDateTime"></div>
+            <button class="theme-toggle-btn" id="themeToggleBtn" type="button">Theme: Teal Ocean</button>
+        </div>
+        <h1>Create Account</h1>
+        <p class="subtext">Register as a student or employee and start location-based attendance.</p>
+        <form id="registerForm">
+            <div>
+                <label for="name">Full Name</label>
+                <input id="name" type="text" placeholder="Enter full name" required>
+            </div>
+            <div>
+                <label for="email">Email</label>
+                <input id="email" type="email" placeholder="name@example.com" required>
+            </div>
+            <div>
+                <label for="password">Password</label>
+                <input id="password" type="password" placeholder="Minimum 6 characters" minlength="6" required>
+            </div>
+            <div>
+                <label for="confirmPassword">Confirm Password</label>
+                <input id="confirmPassword" type="password" placeholder="Re-enter password" required>
+            </div>
+            <button class="btn-primary" type="submit">Register</button>
+        </form>
+        <div id="registerAlert" class="alert"></div>
+        <p class="subtext">Already registered? <a class="link" href="user-login.html">Login here</a></p>
+    </div>
+</div>
+<footer class="site-footer">
+    <div class="site-footer-inner">
+        <span>&copy; 2026 Smart Attendance</span>
+        <span class="footer-links">
+            <a href="about.html">About Us</a>
+            <a href="contact.html">Contact Us</a>
+        </span>
+    </div>
+</footer>
+<script src="js/config.js"></script>
+<script src="js/api.js"></script>
+<script src="js/register.js"></script>
+</body>
+</html>

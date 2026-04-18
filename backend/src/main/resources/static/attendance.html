@@ -1,0 +1,78 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Attendance Page | Smart Attendance</title>
+    <script src="js/local-dev.js"></script>
+    <link rel="icon" href="favicon.svg" type="image/svg+xml">
+    <link rel="preconnect" href="https://fonts.googleapis.com">
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+    <link href="https://fonts.googleapis.com/css2?family=Poppins:wght@400;600;700&family=Space+Grotesk:wght@500;700&display=swap" rel="stylesheet">
+    <link rel="stylesheet" href="css/styles.css">
+</head>
+<body>
+<header class="site-header">
+    <div class="site-header-inner">
+        <a class="site-brand" href="user-dashboard.html">Smart Attendance</a>
+    </div>
+</header>
+<main class="page-wrap">
+    <section class="topbar">
+        <div>
+            <h1>Attendance Page</h1>
+            <p class="subtext">User: <strong id="nameLabel"></strong> | <span id="emailLabel"></span></p>
+        </div>
+        <div class="actions">
+            <div class="live-datetime" id="headerDateTime"></div>
+            <div class="header-tools">
+                <button class="theme-toggle-btn" id="themeToggleBtn" type="button">Theme: Teal Ocean</button>
+                <div class="profile-menu">
+                    <button class="profile-btn" id="profileBtn" type="button">
+                        <span class="avatar" id="profileAvatar">U</span>
+                        <span id="profileNameShort">User</span>
+                    </button>
+                    <div class="profile-dropdown" id="profileDropdown">
+                        <p class="profile-name" id="profileName">-</p>
+                        <p class="profile-email" id="profileEmail">-</p>
+                        <p class="profile-role">Role: <strong id="profileRole">-</strong></p>
+                        <button class="btn-secondary btn-small" id="profileEditBtn" type="button" hidden>Edit Profile</button>
+                        <button class="btn-danger" id="profileLogoutBtn" type="button">Logout</button>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </section>
+
+    <section class="card">
+        <h2>Mark Attendance Using GPS</h2>
+        <div class="location-box">
+            <p class="subtext">Allowed Geofence: <span id="geofenceText">Loading...</span></p>
+            <p class="subtext" id="coordsText">Current Coordinates: Not fetched yet</p>
+            <p class="subtext">Allowed time: 09:00 AM to 04:30 PM | Weekends: Disabled | GPS accuracy: up to 80m</p>
+        </div>
+        <div style="margin-top: 14px;">
+            <label for="attendanceNote">Note (Optional)</label>
+            <textarea id="attendanceNote" rows="3" maxlength="300" placeholder="Example: Field visit, on-site task, meeting location"></textarea>
+        </div>
+        <div style="margin-top: 14px;">
+            <button class="btn-primary" id="markBtn">Mark Attendance</button>
+            <button class="btn-secondary" id="refreshGeoBtn" type="button">Refresh Geofence</button>
+        </div>
+        <div id="attendanceAlert" class="alert"></div>
+    </section>
+</main>
+<footer class="site-footer">
+    <div class="site-footer-inner">
+        <span>© 2026 Smart Attendance</span>
+        <span class="footer-links">
+            <a href="about.html">About Us</a>
+            <a href="contact.html">Contact Us</a>
+        </span>
+    </div>
+</footer>
+<script src="js/config.js"></script>
+<script src="js/api.js"></script>
+<script src="js/attendance.js"></script>
+</body>
+</html>

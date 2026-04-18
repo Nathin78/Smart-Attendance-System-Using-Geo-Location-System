@@ -1,0 +1,168 @@
+﻿<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Admin Dashboard | Smart Attendance</title>
+    <script src="js/local-dev.js"></script>
+    <link rel="icon" href="favicon.svg" type="image/svg+xml">
+    <link rel="preconnect" href="https://fonts.googleapis.com">
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+    <link href="https://fonts.googleapis.com/css2?family=Poppins:wght@400;600;700&family=Space+Grotesk:wght@500;700&display=swap" rel="stylesheet">
+    <link rel="stylesheet" href="css/styles.css">
+</head>
+<body>
+<header class="site-header">
+    <div class="site-header-inner">
+        <a class="site-brand" href="admin-dashboard.html">Smart Attendance</a>
+    </div>
+</header>
+<main class="page-wrap">
+    <section class="topbar">
+        <div>
+            <h1>Admin Dashboard</h1>
+            <p class="subtext">Welcome, <strong id="adminName"></strong></p>
+        </div>
+        <div class="actions">
+            <div class="live-datetime" id="headerDateTime"></div>
+            <div class="header-tools">
+                <button class="theme-toggle-btn" id="themeToggleBtn" type="button">Theme: Teal Ocean</button>
+                <div class="profile-menu">
+                    <button class="profile-btn" id="profileBtn" type="button">
+                        <span class="avatar" id="profileAvatar">A</span>
+                        <span id="profileNameShort">Admin</span>
+                    </button>
+                    <div class="profile-dropdown" id="profileDropdown">
+                        <p class="profile-name" id="profileName">-</p>
+                        <p class="profile-email" id="profileEmail">-</p>
+                        <p class="profile-role">Role: <strong id="profileRole">-</strong></p>
+                        <button class="btn-danger" id="profileLogoutBtn" type="button">Logout</button>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </section>
+
+    <div id="adminAlert" class="alert"></div>
+
+    <section class="card" style="margin-bottom: 18px;">
+        <h2>Daily Report</h2>
+        <div class="topbar">
+            <div>
+                <label for="reportDate">Select Date</label>
+                <input id="reportDate" type="date">
+            </div>
+            <div class="actions">
+                <label class="toggle-inline">
+                    <input type="checkbox" id="autoRefreshToggle" checked>
+                    Auto Refresh
+                </label>
+                <button class="btn-secondary" id="loadReportBtn">Generate Report</button>
+            </div>
+        </div>
+        <div class="actions" style="margin-bottom: 12px;">
+            <button class="btn-primary" id="dailyExportBtn" type="button">Download Daily Excel</button>
+            <button class="btn-secondary" id="weeklyExportBtn" type="button">Download Weekly Excel</button>
+            <button class="btn-secondary" id="monthlyExportBtn" type="button">Download Monthly Excel</button>
+        </div>
+        <div class="grid cols-3">
+            <div class="stat"><h3>Total Users</h3><p id="totalUsers">0</p></div>
+            <div class="stat"><h3>Marked</h3><p id="totalMarked">0</p></div>
+            <div class="stat"><h3>Present</h3><p id="presentCount">0</p></div>
+            <div class="stat"><h3>Late</h3><p id="lateCount">0</p></div>
+            <div class="stat"><h3>On Leave</h3><p id="onLeaveCount">0</p></div>
+            <div class="stat"><h3>Absent</h3><p id="absentCount">0</p></div>
+        </div>
+        <div class="table-wrap" style="margin-top: 16px;">
+            <table>
+                <thead>
+                <tr>
+                    <th>User</th>
+                    <th>Date</th>
+                    <th>Time</th>
+                    <th>Status</th>
+                    <th>Location</th>
+                    <th>Distance</th>
+                    <th>Accuracy</th>
+                    <th>Note</th>
+                    <th>Info</th>
+                </tr>
+                </thead>
+                <tbody id="reportRows"></tbody>
+            </table>
+        </div>
+    </section>
+
+    <section class="grid cols-2">
+        <article class="card">
+            <h2>Registered Users</h2>
+            <div class="table-wrap">
+                <table>
+                    <thead>
+                    <tr>
+                        <th>ID</th>
+                        <th>Name</th>
+                        <th>Email</th>
+                        <th>Role</th>
+                    </tr>
+                    </thead>
+                    <tbody id="userRows"></tbody>
+                </table>
+            </div>
+        </article>
+
+        <article class="card">
+            <h2>Manage Geofence</h2>
+            <p class="subtext">Update the allowed attendance center and radius.</p>
+            <form id="geofenceForm">
+                <div>
+                    <label for="latitude">Latitude</label>
+                    <input id="latitude" type="number" step="0.000001" required>
+                </div>
+                <div>
+                    <label for="longitude">Longitude</label>
+                    <input id="longitude" type="number" step="0.000001" required>
+                </div>
+                <div>
+                    <label for="radius">Radius (meters)</label>
+                    <input id="radius" type="number" step="0.1" min="1" required>
+                </div>
+                <button class="btn-primary" type="submit">Save Geofence</button>
+            </form>
+        </article>
+    </section>
+
+    <section class="card" style="margin-top: 18px;">
+        <h2>Leave Requests</h2>
+        <p class="subtext">Review and approve leave requests submitted by users.</p>
+        <div class="table-wrap">
+            <table>
+                <thead>
+                <tr>
+                    <th>User</th>
+                    <th>Range</th>
+                    <th>Status</th>
+                    <th>Reason</th>
+                    <th>Admin Comment</th>
+                    <th>Actions</th>
+                </tr>
+                </thead>
+                <tbody id="leaveRequestRows"></tbody>
+            </table>
+        </div>
+    </section>
+</main>
+<footer class="site-footer">
+    <div class="site-footer-inner">
+        <span>&copy; 2026 Smart Attendance</span>
+        <span class="footer-links">
+            <a href="about.html">About Us</a>
+            <a href="contact.html">Contact Us</a>
+        </span>
+    </div>
+</footer>
+<script src="js/config.js"></script>
+<script src="js/api.js"></script>
+<script src="js/admin-dashboard.js"></script>
+</body>
+</html>

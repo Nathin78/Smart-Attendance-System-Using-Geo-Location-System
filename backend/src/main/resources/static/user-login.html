@@ -1,0 +1,66 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>User Login | Smart Attendance</title>
+    <script src="js/local-dev.js"></script>
+    <link rel="icon" href="favicon.svg" type="image/svg+xml">
+    <link rel="preconnect" href="https://fonts.googleapis.com">
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+    <link href="https://fonts.googleapis.com/css2?family=Poppins:wght@400;600;700&family=Space+Grotesk:wght@500;700&display=swap" rel="stylesheet">
+    <link rel="stylesheet" href="css/styles.css">
+</head>
+<body data-login-role="USER">
+<header class="site-header">
+    <div class="site-header-inner">
+        <a class="site-brand" href="login.html">Smart Attendance</a>
+    </div>
+</header>
+<div class="auth-container">
+    <div class="card">
+        <div class="topbar" style="margin-bottom: 8px;">
+            <div class="live-datetime" id="headerDateTime"></div>
+            <button class="theme-toggle-btn" id="themeToggleBtn" type="button">Theme: Teal Ocean</button>
+        </div>
+        <h1>User Login</h1>
+        <p class="subtext">Login as a user to mark attendance with secure geo-location verification.</p>
+        <form id="loginForm">
+            <div>
+                <label for="email">Email</label>
+                <input id="email" type="email" placeholder="name@example.com" required>
+            </div>
+            <div>
+                <label for="password">Password</label>
+                <div class="input-inline">
+                    <input id="password" type="password" placeholder="Enter password" required>
+                    <button class="btn-secondary" id="togglePasswordBtn" type="button">Show</button>
+                </div>
+            </div>
+            <label class="toggle-inline" for="rememberEmail">
+                <input id="rememberEmail" type="checkbox">
+                Remember my email
+            </label>
+            <div class="input-inline">
+                <button class="btn-primary" type="submit">Login</button>
+                <button class="btn-secondary" id="resetLoginBtn" type="button">Reset</button>
+            </div>
+        </form>
+        <div id="loginAlert" class="alert"></div>
+        <p class="subtext">New user? <a class="link" href="register.html">Create account</a></p>
+    </div>
+</div>
+<footer class="site-footer">
+    <div class="site-footer-inner">
+        <span>&copy; 2026 Smart Attendance</span>
+        <span class="footer-links">
+            <a href="about.html">About Us</a>
+            <a href="contact.html">Contact Us</a>
+        </span>
+    </div>
+</footer>
+<script src="js/config.js"></script>
+<script src="js/api.js"></script>
+<script src="js/login.js"></script>
+</body>
+</html>
