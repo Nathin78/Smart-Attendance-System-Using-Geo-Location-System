@@ -2,3 +2,15 @@
 /.idea/
 *.iml
 *.log
+.env
+.env.local
+.env.*
+!.env.example
+/logs/
+*.tmp
+*.bak
+Thumbs.db
+Desktop.ini
+.DS_Store
+/.vscode/
+/backend/src/main/resources/application.properties
