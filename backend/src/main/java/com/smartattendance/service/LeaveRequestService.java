@@ -19,10 +19,17 @@ public class LeaveRequestService {
 
     private final LeaveRequestRepository leaveRequestRepository;
     private final UserRepository userRepository;
+    private final NotificationService notificationService;
+    private final AuditLogService auditLogService;
 
-    public LeaveRequestService(LeaveRequestRepository leaveRequestRepository, UserRepository userRepository) {
+    public LeaveRequestService(LeaveRequestRepository leaveRequestRepository,
+                               UserRepository userRepository,
+                               NotificationService notificationService,
+                               AuditLogService auditLogService) {
         this.leaveRequestRepository = leaveRequestRepository;
         this.userRepository = userRepository;
+        this.notificationService = notificationService;
+        this.auditLogService = auditLogService;
     }
 
     public LeaveRequestResponse createLeaveRequest(String email, LeaveRequestCreateRequest request) {
@@ -42,7 +49,17 @@ public class LeaveRequestService {
         leaveRequest.setCreatedAt(LocalDateTime.now());
         leaveRequest.setUpdatedAt(LocalDateTime.now());
 
-        return mapResponse(leaveRequestRepository.save(leaveRequest));
+        LeaveRequestResponse response = mapResponse(leaveRequestRepository.save(leaveRequest));
+        auditLogService.record(email, "LEAVE_REQUEST_CREATED", "LEAVE_REQUEST", response.getId(),
+                "Requested leave from " + request.getStartDate() + " to " + request.getEndDate());
+        notificationService.notifyUser(
+                email,
+                "Leave request submitted",
+                "Your leave request from " + request.getStartDate() + " to " + request.getEndDate() + " is pending review.",
+                "LEAVE",
+                "/user-dashboard.html"
+        );
+        return response;
     }
 
     public List<LeaveRequestResponse> getMyRequests(String email) {
@@ -69,7 +86,7 @@ public class LeaveRequestService {
                 .toList();
     }
 
-    public LeaveRequestResponse reviewLeaveRequest(Long id, LeaveRequestReviewRequest request) {
+    public LeaveRequestResponse reviewLeaveRequest(String actorEmail, Long id, LeaveRequestReviewRequest request) {
         LeaveRequest leaveRequest = leaveRequestRepository.findById(id)
                 .orElseThrow(() -> new IllegalArgumentException("Leave request not found"));
 
@@ -78,7 +95,18 @@ public class LeaveRequestService {
         leaveRequest.setAdminComment(sanitizeComment(request.getAdminComment()));
         leaveRequest.setUpdatedAt(LocalDateTime.now());
 
-        return mapResponse(leaveRequestRepository.save(leaveRequest));
+        LeaveRequestResponse response = mapResponse(leaveRequestRepository.save(leaveRequest));
+        auditLogService.record(actorEmail, "LEAVE_REQUEST_REVIEWED", "LEAVE_REQUEST", leaveRequest.getId(),
+                "Leave request set to " + status.name());
+        notificationService.notifyUser(
+                leaveRequest.getUser().getEmail(),
+                "Leave request " + status.name().toLowerCase(),
+                "Your leave request from " + leaveRequest.getStartDate() + " to " + leaveRequest.getEndDate()
+                        + " was " + status.name().toLowerCase() + ".",
+                "LEAVE",
+                "/user-dashboard.html"
+        );
+        return response;
     }
 
     public boolean hasApprovedLeave(User user, LocalDate date) {

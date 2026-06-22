@@ -4,10 +4,23 @@ document.addEventListener("DOMContentLoaded", async () => {
 
     SmartApp.initThemeControl();
     SmartApp.initHeaderClock();
+    SmartApp.initProfileMenu(user);
 
     const form = document.getElementById("profileForm");
     const resetButton = document.getElementById("resetProfileBtn");
+    const avatarInput = document.getElementById("avatarInput");
+    const avatarPreview = document.getElementById("profilePhotoPreview");
     let originalProfile = null;
+
+    wirePasswordToggle("toggleCurrentPasswordBtn", "currentPasswordInput");
+    wirePasswordToggle("toggleNewPasswordBtn", "newPasswordInput");
+    wirePasswordToggle("toggleConfirmPasswordBtn", "confirmPasswordInput");
+
+    avatarInput?.addEventListener("change", () => {
+        const file = avatarInput.files?.[0];
+        if (!file || !avatarPreview) return;
+        avatarPreview.src = URL.createObjectURL(file);
+    });
 
     form.addEventListener("submit", async (event) => {
         event.preventDefault();
@@ -18,6 +31,7 @@ document.addEventListener("DOMContentLoaded", async () => {
         const currentPassword = document.getElementById("currentPasswordInput").value.trim();
         const newPassword = document.getElementById("newPasswordInput").value.trim();
         const confirmPassword = document.getElementById("confirmPasswordInput").value.trim();
+        const avatarFile = avatarInput?.files?.[0] || null;
 
         if (!name || !email) {
             SmartApp.showAlert("profileAlert", "Name and email are required", "error");
@@ -39,6 +53,17 @@ document.addEventListener("DOMContentLoaded", async () => {
             }
         }
 
+        let latestSession = null;
+        if (avatarFile) {
+            const uploadResponse = await uploadAvatar(avatarFile);
+            if (!uploadResponse.ok) {
+                SmartApp.showAlert("profileAlert", uploadResponse.data?.message || "Unable to upload profile photo", "error");
+                return;
+            }
+            latestSession = uploadResponse.data;
+            SmartApp.saveSession(uploadResponse.data);
+        }
+
         const response = await SmartApp.apiRequest("/api/profile/me", {
             method: "PUT",
             body: JSON.stringify({
@@ -54,11 +79,13 @@ document.addEventListener("DOMContentLoaded", async () => {
             return;
         }
 
+        latestSession = response.data;
         SmartApp.saveSession(response.data);
         originalProfile = {
             name: response.data.name,
             email: response.data.email,
-            role: response.data.role
+            role: response.data.role,
+            avatarUrl: response.data.avatarUrl || latestSession?.avatarUrl || null
         };
         populateProfile(originalProfile);
         clearPasswordFields();
@@ -83,17 +110,47 @@ document.addEventListener("DOMContentLoaded", async () => {
     populateProfile(originalProfile);
 
     function populateProfile(profile) {
+        const avatar = profile.avatarUrl || "favicon.svg";
         document.getElementById("profileNameInput").value = profile.name || "";
         document.getElementById("profileEmailInput").value = profile.email || "";
         document.getElementById("profileRoleInput").value = profile.role || "USER";
         document.getElementById("profileSummaryName").textContent = profile.name || "-";
         document.getElementById("profileSummaryEmail").textContent = profile.email || "-";
         document.getElementById("profileSummaryRole").textContent = profile.role || "-";
+        document.getElementById("profileHeroName").textContent = profile.name || "User";
+        document.getElementById("profileHeroEmail").textContent = profile.email || "-";
+        document.getElementById("profileRoleBadge").textContent = profile.role || "USER";
+        document.getElementById("profileStateText").textContent = profile.avatarUrl ? "Custom avatar enabled" : "Using default avatar";
+        document.getElementById("profileHeroAvatar").textContent = "";
+        document.getElementById("profileHeroAvatar").style.backgroundImage = `url(${avatar})`;
+        document.getElementById("profileHeroAvatar").style.backgroundSize = "cover";
+        document.getElementById("profileHeroAvatar").style.backgroundPosition = "center";
+        if (avatarPreview) avatarPreview.src = avatar;
     }
 
     function clearPasswordFields() {
         document.getElementById("currentPasswordInput").value = "";
         document.getElementById("newPasswordInput").value = "";
         document.getElementById("confirmPasswordInput").value = "";
+        if (avatarInput) avatarInput.value = "";
+    }
+
+    async function uploadAvatar(file) {
+        const formData = new FormData();
+        formData.append("avatar", file);
+        return SmartApp.apiRequest("/api/profile/me/avatar", {
+            method: "POST",
+            body: formData
+        });
+    }
+
+    function wirePasswordToggle(buttonId, inputId) {
+        const button = document.getElementById(buttonId);
+        const input = document.getElementById(inputId);
+        if (!button || !input) return;
+        button.addEventListener("click", () => {
+            input.type = input.type === "password" ? "text" : "password";
+            button.textContent = input.type === "password" ? "Show" : "Hide";
+        });
     }
 });

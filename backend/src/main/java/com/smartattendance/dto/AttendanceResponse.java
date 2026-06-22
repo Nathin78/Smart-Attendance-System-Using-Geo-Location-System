@@ -17,6 +17,9 @@ public class AttendanceResponse {
     private Double distanceMeters;
     private Double accuracyMeters;
     private String note;
+    private LocalTime scheduledStartTime;
+    private LocalTime scheduledEndTime;
+    private LocalTime scheduledLateAfter;
 
     public boolean isSuccess() {
         return success;
@@ -112,5 +115,29 @@ public class AttendanceResponse {
 
     public void setNote(String note) {
         this.note = note;
+    }
+
+    public LocalTime getScheduledStartTime() {
+        return scheduledStartTime;
+    }
+
+    public void setScheduledStartTime(LocalTime scheduledStartTime) {
+        this.scheduledStartTime = scheduledStartTime;
+    }
+
+    public LocalTime getScheduledEndTime() {
+        return scheduledEndTime;
+    }
+
+    public void setScheduledEndTime(LocalTime scheduledEndTime) {
+        this.scheduledEndTime = scheduledEndTime;
+    }
+
+    public LocalTime getScheduledLateAfter() {
+        return scheduledLateAfter;
+    }
+
+    public void setScheduledLateAfter(LocalTime scheduledLateAfter) {
+        this.scheduledLateAfter = scheduledLateAfter;
     }
 }

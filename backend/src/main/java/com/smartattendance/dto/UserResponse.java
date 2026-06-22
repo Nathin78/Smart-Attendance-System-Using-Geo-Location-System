@@ -6,6 +6,7 @@ public class UserResponse {
     private String name;
     private String email;
     private String role;
+    private String avatarUrl;
 
     public UserResponse() {
     }
@@ -47,5 +48,13 @@ public class UserResponse {
 
     public void setRole(String role) {
         this.role = role;
+    }
+
+    public String getAvatarUrl() {
+        return avatarUrl;
+    }
+
+    public void setAvatarUrl(String avatarUrl) {
+        this.avatarUrl = avatarUrl;
     }
 }

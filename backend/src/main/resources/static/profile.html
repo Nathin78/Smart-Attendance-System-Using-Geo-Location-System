@@ -34,6 +34,31 @@
         </div>
     </section>
 
+    <section class="grid cols-2 profile-hero-grid">
+        <article class="card profile-hero-card">
+            <div class="profile-hero">
+                <span class="profile-hero-avatar" id="profileHeroAvatar">U</span>
+                <div class="profile-hero-copy">
+                    <p class="profile-kicker">User Account</p>
+                    <h2 id="profileHeroName">Loading...</h2>
+                    <p class="subtext" id="profileHeroEmail">Loading current email...</p>
+                    <div class="profile-meta-row">
+                        <span class="status-pill present" id="profileRoleBadge">USER</span>
+                        <span class="muted" id="profileStateText">Loading profile details...</span>
+                    </div>
+                </div>
+            </div>
+        </article>
+        <article class="card">
+            <h2>Profile Tips</h2>
+            <ul class="subtext profile-tip-list">
+                <li>Keep your email current so login and reports continue to work after updates.</li>
+                <li>Use the password fields only when you want to change your password.</li>
+                <li>Reset restores the saved values from the database, not just the last typed text.</li>
+            </ul>
+        </article>
+    </section>
+
     <section class="grid cols-2">
         <article class="card">
             <h2>Profile Summary</h2>
@@ -59,30 +84,47 @@
             <form id="profileForm" class="stacked-form">
                 <div>
                     <label for="profileNameInput">Full Name</label>
-                    <input id="profileNameInput" type="text" placeholder="Enter your full name" required>
+                    <input id="profileNameInput" type="text" placeholder="Enter your full name" minlength="2" maxlength="80" autocomplete="name" required>
+                    <small class="field-help">Use the name that should appear in attendance records and reports.</small>
                 </div>
                 <div>
                     <label for="profileEmailInput">Email</label>
-                    <input id="profileEmailInput" type="email" placeholder="name@example.com" required>
+                    <input id="profileEmailInput" type="email" placeholder="name@example.com" autocomplete="email" required>
+                    <small class="field-help">Changing your email also updates the email used for your next login.</small>
                 </div>
                 <div>
                     <label for="profileRoleInput">Role</label>
                     <input id="profileRoleInput" type="text" readonly>
+                    <small class="field-help">Role is assigned by the system and cannot be changed here.</small>
                 </div>
                 <div>
                     <label for="currentPasswordInput">Current Password</label>
-                    <input id="currentPasswordInput" type="password" placeholder="Required only when changing password">
+                    <div class="input-group">
+                        <input id="currentPasswordInput" type="password" placeholder="Required only when changing password" autocomplete="current-password">
+                        <button class="btn-secondary" id="toggleCurrentPasswordBtn" type="button">Show</button>
+                    </div>
                 </div>
                 <div>
                     <label for="newPasswordInput">New Password</label>
-                    <input id="newPasswordInput" type="password" placeholder="Leave blank to keep your current password">
+                    <div class="input-group">
+                        <input id="newPasswordInput" type="password" placeholder="Leave blank to keep your current password" minlength="6" autocomplete="new-password">
+                        <button class="btn-secondary" id="toggleNewPasswordBtn" type="button">Show</button>
+                    </div>
+                    <small class="field-help">Use at least 6 characters.</small>
                 </div>
                 <div>
                     <label for="confirmPasswordInput">Confirm New Password</label>
-                    <input id="confirmPasswordInput" type="password" placeholder="Re-enter new password">
+                    <div class="input-group">
+                        <input id="confirmPasswordInput" type="password" placeholder="Re-enter new password" minlength="6" autocomplete="new-password">
+                        <button class="btn-secondary" id="toggleConfirmPasswordBtn" type="button">Show</button>
+                    </div>
+                </div>
+                <div class="profile-form-status">
+                    <span class="muted" id="profileDirtyState">No unsaved changes</span>
+                    <span class="muted" id="profileLastSaved">Saved data is up to date</span>
                 </div>
                 <div class="actions">
-                    <button class="btn-primary" type="submit">Save Profile</button>
+                    <button class="btn-primary" id="saveProfileBtn" type="submit">Save Profile</button>
                     <button class="btn-secondary" id="resetProfileBtn" type="button">Reset</button>
                 </div>
             </form>

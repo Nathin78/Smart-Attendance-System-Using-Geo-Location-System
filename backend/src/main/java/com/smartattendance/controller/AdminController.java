@@ -3,17 +3,23 @@ package com.smartattendance.controller;
 import com.smartattendance.dto.GeofenceRequest;
 import com.smartattendance.dto.GeofenceResponse;
 import com.smartattendance.dto.ReportResponse;
+import com.smartattendance.dto.AuditLogResponse;
 import com.smartattendance.dto.LeaveRequestResponse;
 import com.smartattendance.dto.LeaveRequestReviewRequest;
+import com.smartattendance.dto.RoleUpdateRequest;
+import com.smartattendance.dto.ShiftRequest;
+import com.smartattendance.dto.ShiftResponse;
 import com.smartattendance.dto.UserResponse;
 import com.smartattendance.service.AdminService;
 import com.smartattendance.service.GeofenceService;
 import com.smartattendance.service.LeaveRequestService;
+import com.smartattendance.service.ShiftService;
 import jakarta.validation.Valid;
 import org.springframework.format.annotation.DateTimeFormat;
 import org.springframework.http.HttpHeaders;
 import org.springframework.http.MediaType;
 import org.springframework.http.ResponseEntity;
+import org.springframework.security.core.Authentication;
 import org.springframework.web.bind.annotation.GetMapping;
 import org.springframework.web.bind.annotation.PutMapping;
 import org.springframework.web.bind.annotation.PathVariable;
@@ -32,11 +38,14 @@ public class AdminController {
     private final AdminService adminService;
     private final GeofenceService geofenceService;
     private final LeaveRequestService leaveRequestService;
+    private final ShiftService shiftService;
 
-    public AdminController(AdminService adminService, GeofenceService geofenceService, LeaveRequestService leaveRequestService) {
+    public AdminController(AdminService adminService, GeofenceService geofenceService, LeaveRequestService leaveRequestService,
+                           ShiftService shiftService) {
         this.adminService = adminService;
         this.geofenceService = geofenceService;
         this.leaveRequestService = leaveRequestService;
+        this.shiftService = shiftService;
     }
 
     @GetMapping("/users")
@@ -72,8 +81,9 @@ public class AdminController {
     }
 
     @PutMapping("/geofence")
-    public ResponseEntity<GeofenceResponse> updateGeofence(@Valid @RequestBody GeofenceRequest request) {
-        return ResponseEntity.ok(geofenceService.updateGeofence(request));
+    public ResponseEntity<GeofenceResponse> updateGeofence(@Valid @RequestBody GeofenceRequest request,
+                                                           Authentication authentication) {
+        return ResponseEntity.ok(geofenceService.updateGeofence(authentication.getName(), request));
     }
 
     @GetMapping("/leave-requests")
@@ -92,7 +102,32 @@ public class AdminController {
 
     @PutMapping("/leave-requests/{id}")
     public ResponseEntity<LeaveRequestResponse> reviewLeaveRequest(@PathVariable Long id,
-                                                                   @Valid @RequestBody LeaveRequestReviewRequest request) {
-        return ResponseEntity.ok(leaveRequestService.reviewLeaveRequest(id, request));
+                                                                   @Valid @RequestBody LeaveRequestReviewRequest request,
+                                                                   Authentication authentication) {
+        return ResponseEntity.ok(leaveRequestService.reviewLeaveRequest(authentication.getName(), id, request));
+    }
+
+    @PutMapping("/users/{id}/role")
+    public ResponseEntity<UserResponse> updateRole(@PathVariable Long id,
+                                                   @Valid @RequestBody RoleUpdateRequest request,
+                                                   Authentication authentication) {
+        return ResponseEntity.ok(adminService.updateUserRole(id, request, authentication.getName()));
+    }
+
+    @GetMapping("/shifts")
+    public ResponseEntity<List<ShiftResponse>> getShifts() {
+        return ResponseEntity.ok(adminService.getAllShifts());
+    }
+
+    @PutMapping("/shifts/{userId}")
+    public ResponseEntity<ShiftResponse> updateShift(@PathVariable Long userId,
+                                                     @Valid @RequestBody ShiftRequest request,
+                                                     Authentication authentication) {
+        return ResponseEntity.ok(adminService.updateShift(userId, request, authentication.getName()));
+    }
+
+    @GetMapping("/audit-logs")
+    public ResponseEntity<List<AuditLogResponse>> getAuditLogs() {
+        return ResponseEntity.ok(adminService.getAuditLogs());
     }
 }

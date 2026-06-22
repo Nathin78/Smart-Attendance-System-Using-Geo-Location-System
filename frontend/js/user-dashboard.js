@@ -1,6 +1,8 @@
 let allAttendanceRecords = [];
 let attendanceSummary = null;
 let myLeaveRequests = [];
+let currentShift = null;
+let stopNotificationPolling = null;
 
 document.addEventListener("DOMContentLoaded", async () => {
     const user = SmartApp.requireAuth("USER");
@@ -30,7 +32,12 @@ document.addEventListener("DOMContentLoaded", async () => {
     document.getElementById("leaveStartDate").value = today;
     document.getElementById("leaveEndDate").value = today;
 
-    await Promise.all([loadGeofence(), loadAttendanceSummary(), loadAttendance(), loadLeaveRequests()]);
+    await Promise.all([loadGeofence(), loadAttendanceSummary(), loadAttendance(), loadLeaveRequests(), loadShift()]);
+    renderCharts();
+    stopNotificationPolling = await SmartApp.initNotificationPolling({
+        badgeId: "notificationSummaryCount",
+        listId: "notificationFeed"
+    });
 });
 
 async function loadGeofence() {
@@ -71,6 +78,17 @@ async function loadAttendanceSummary() {
     renderSummary();
 }
 
+async function loadShift() {
+    const response = await SmartApp.apiRequest("/api/shifts/me");
+    if (!response.ok || !response.data) {
+        renderShift(null);
+        return;
+    }
+
+    currentShift = response.data;
+    renderShift(currentShift);
+}
+
 async function loadLeaveRequests() {
     const response = await SmartApp.apiRequest("/api/leave-requests/my");
     if (!response.ok) {
@@ -81,6 +99,29 @@ async function loadLeaveRequests() {
 
     myLeaveRequests = Array.isArray(response.data) ? response.data : [];
     renderLeaveRequests(myLeaveRequests);
+}
+
+function renderShift(shift) {
+    const shiftRange = document.getElementById("shiftRange");
+    const shiftLateAfter = document.getElementById("shiftLateAfter");
+    const shiftUpdatedAt = document.getElementById("shiftUpdatedAt");
+
+    if (!shift) {
+        if (shiftRange) shiftRange.textContent = "09:00 AM to 04:30 PM";
+        if (shiftLateAfter) shiftLateAfter.textContent = "09:30 AM";
+        if (shiftUpdatedAt) shiftUpdatedAt.textContent = "Using default schedule";
+        return;
+    }
+
+    if (shiftRange) {
+        shiftRange.textContent = `${SmartApp.formatTime(shift.startTime)} to ${SmartApp.formatTime(shift.endTime)}`;
+    }
+    if (shiftLateAfter) {
+        shiftLateAfter.textContent = SmartApp.formatTime(shift.lateAfter);
+    }
+    if (shiftUpdatedAt) {
+        shiftUpdatedAt.textContent = shift.updatedAt ? new Date(shift.updatedAt).toLocaleString() : "-";
+    }
 }
 
 async function submitLeaveRequest(event) {
@@ -104,6 +145,7 @@ async function submitLeaveRequest(event) {
     SmartApp.showAlert("leaveAlert", "Leave request submitted successfully", "success");
     document.getElementById("leaveReason").value = "";
     await loadLeaveRequests();
+    renderCharts();
 }
 
 function applyFilters() {
@@ -302,6 +344,117 @@ function buildSummaryFromRecords(records) {
         todayRecord,
         lastRecord
     };
+}
+
+function renderCharts() {
+    renderMonthlyTrendChart();
+    renderLateFrequencyChart();
+    renderLeavePatternChart();
+}
+
+function renderMonthlyTrendChart() {
+    const canvas = document.getElementById("monthlyTrendChart");
+    if (!canvas) return;
+    const ctx = canvas.getContext("2d");
+    const months = [...new Set(allAttendanceRecords.map(item => item.date?.slice(0, 7)).filter(Boolean))].slice(0, 6).reverse();
+    const data = months.map(month => allAttendanceRecords.filter(item => item.date?.startsWith(month)).length);
+    drawBarChart(ctx, canvas, months.map(formatMonthLabel), data, "#0e7490");
+}
+
+function renderLateFrequencyChart() {
+    const canvas = document.getElementById("lateFrequencyChart");
+    if (!canvas) return;
+    const ctx = canvas.getContext("2d");
+    const lateRecords = allAttendanceRecords.filter(item => item.status === "LATE");
+    const days = ["Mon", "Tue", "Wed", "Thu", "Fri", "Sat", "Sun"];
+    const counts = days.map((_, index) => lateRecords.filter(item => new Date(`${item.date}T00:00:00`).getDay() === ((index + 1) % 7)).length);
+    drawBarChart(ctx, canvas, days, counts, "#c2410c");
+}
+
+function renderLeavePatternChart() {
+    const canvas = document.getElementById("leavePatternChart");
+    if (!canvas) return;
+    const ctx = canvas.getContext("2d");
+    const approved = myLeaveRequests.filter(item => item.status === "APPROVED").length;
+    const pending = myLeaveRequests.filter(item => item.status === "PENDING").length;
+    const rejected = myLeaveRequests.filter(item => item.status === "REJECTED").length;
+    drawDonutChart(ctx, canvas, [
+        { label: "Approved", value: approved, color: "#0b8b53" },
+        { label: "Pending", value: pending, color: "#1d4ed8" },
+        { label: "Rejected", value: rejected, color: "#b42318" }
+    ]);
+}
+
+function drawBarChart(ctx, canvas, labels, values, color) {
+    if (!ctx) return;
+    const width = canvas.width;
+    const height = canvas.height;
+    ctx.clearRect(0, 0, width, height);
+    ctx.fillStyle = "#ffffff";
+    ctx.fillRect(0, 0, width, height);
+    const max = Math.max(...values, 1);
+    const padding = 32;
+    const barWidth = (width - padding * 2) / Math.max(values.length * 1.5, 1);
+    ctx.font = "12px sans-serif";
+    ctx.textAlign = "center";
+    values.forEach((value, index) => {
+        const barHeight = ((height - padding * 2) * value) / max;
+        const x = padding + index * barWidth * 1.5;
+        const y = height - padding - barHeight;
+        ctx.fillStyle = color;
+        ctx.fillRect(x, y, barWidth, barHeight);
+        ctx.fillStyle = "#334155";
+        ctx.fillText(labels[index] || "", x + barWidth / 2, height - 10);
+    });
+}
+
+function drawDonutChart(ctx, canvas, slices) {
+    if (!ctx) return;
+    const width = canvas.width;
+    const height = canvas.height;
+    const total = slices.reduce((sum, item) => sum + item.value, 0) || 1;
+    ctx.clearRect(0, 0, width, height);
+    ctx.fillStyle = "#ffffff";
+    ctx.fillRect(0, 0, width, height);
+
+    let start = -Math.PI / 2;
+    const cx = width / 2;
+    const cy = height / 2 - 10;
+    const radius = Math.min(width, height) / 3;
+
+    slices.forEach(slice => {
+        const angle = (Math.PI * 2 * slice.value) / total;
+        ctx.beginPath();
+        ctx.moveTo(cx, cy);
+        ctx.fillStyle = slice.color;
+        ctx.arc(cx, cy, radius, start, start + angle);
+        ctx.closePath();
+        ctx.fill();
+        start += angle;
+    });
+
+    ctx.globalCompositeOperation = "destination-out";
+    ctx.beginPath();
+    ctx.arc(cx, cy, radius * 0.55, 0, Math.PI * 2);
+    ctx.fill();
+    ctx.globalCompositeOperation = "source-over";
+
+    ctx.font = "12px sans-serif";
+    ctx.textAlign = "left";
+    let legendY = height - 65;
+    slices.forEach(slice => {
+        ctx.fillStyle = slice.color;
+        ctx.fillRect(18, legendY - 10, 10, 10);
+        ctx.fillStyle = "#334155";
+        ctx.fillText(`${slice.label}: ${slice.value}`, 34, legendY - 1);
+        legendY += 18;
+    });
+}
+
+function formatMonthLabel(value) {
+    if (!value) return "";
+    const [year, month] = value.split("-");
+    return `${month}/${year.slice(2)}`;
 }
 
 function renderRecentActivity(records) {

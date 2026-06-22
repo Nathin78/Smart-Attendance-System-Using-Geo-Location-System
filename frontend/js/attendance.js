@@ -9,7 +9,7 @@ document.addEventListener("DOMContentLoaded", async () => {
     document.getElementById("nameLabel").textContent = user.name;
     document.getElementById("emailLabel").textContent = user.email;
 
-    await loadGeofence();
+    await Promise.all([loadGeofence(), loadShift()]);
 
     document.getElementById("refreshGeoBtn").addEventListener("click", loadGeofence);
     document.getElementById("markBtn").addEventListener("click", markAttendance);
@@ -28,6 +28,28 @@ async function loadGeofence() {
 
     document.getElementById("geofenceText").textContent =
         `${geofenceRes.data.latitude}, ${geofenceRes.data.longitude} (Radius: ${geofenceRes.data.radius} m)`;
+}
+
+async function loadShift() {
+    const response = await SmartApp.apiRequest("/api/shifts/me");
+    const shiftWindowText = document.getElementById("shiftWindowText");
+    if (!response.ok || !response.data) {
+        if (shiftWindowText) {
+            shiftWindowText.textContent = "Allowed time: 09:00 AM to 04:30 PM | Weekends: Disabled | GPS accuracy: up to 80m";
+        }
+        return;
+    }
+
+    const shift = response.data;
+    const shiftText = `${SmartApp.formatTime(shift.startTime)} to ${SmartApp.formatTime(shift.endTime)}`;
+    const lateAfterText = SmartApp.formatTime(shift.lateAfter);
+    const rangeText = `${shiftText} | Weekends: Disabled | GPS accuracy: up to 80m`;
+
+    if (shiftWindowText) shiftWindowText.textContent = rangeText;
+    const shiftNode = document.getElementById("shiftText");
+    const lateNode = document.getElementById("lateAfterText");
+    if (shiftNode) shiftNode.textContent = shiftText;
+    if (lateNode) lateNode.textContent = lateAfterText;
 }
 
 async function markAttendance() {

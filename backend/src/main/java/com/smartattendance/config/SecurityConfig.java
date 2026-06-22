@@ -52,7 +52,9 @@ public class SecurityConfig {
                 .authorizeHttpRequests(auth -> auth
                         .requestMatchers(HttpMethod.OPTIONS, "/**").permitAll()
                         .requestMatchers("/api/auth/**", "/error").permitAll()
-                        .requestMatchers("/api/admin/**").hasRole("ADMIN")
+                        .requestMatchers("/api/admin/**").hasAnyRole("ADMIN", "HR", "SUPERVISOR")
+                        .requestMatchers("/api/notifications/**").authenticated()
+                        .requestMatchers("/api/shifts/**").authenticated()
                         .requestMatchers("/api/attendance/**").authenticated()
                         .requestMatchers(HttpMethod.GET, "/api/geofence/current").authenticated()
                         .requestMatchers("/api/geofence/**").authenticated()

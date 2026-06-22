@@ -6,6 +6,7 @@ public class AuthResponse {
     private String role;
     private String name;
     private String email;
+    private String avatarUrl;
 
     public AuthResponse() {
     }
@@ -47,5 +48,13 @@ public class AuthResponse {
 
     public void setEmail(String email) {
         this.email = email;
+    }
+
+    public String getAvatarUrl() {
+        return avatarUrl;
+    }
+
+    public void setAvatarUrl(String avatarUrl) {
+        this.avatarUrl = avatarUrl;
     }
 }

@@ -6,6 +6,7 @@ import com.smartattendance.dto.MarkAttendanceRequest;
 import com.smartattendance.entity.Attendance;
 import com.smartattendance.entity.AttendanceStatus;
 import com.smartattendance.entity.Geofence;
+import com.smartattendance.entity.ShiftAssignment;
 import com.smartattendance.entity.User;
 import com.smartattendance.repository.AttendanceRepository;
 import com.smartattendance.repository.UserRepository;
@@ -31,6 +32,9 @@ public class AttendanceService {
     private final UserRepository userRepository;
     private final GeofenceService geofenceService;
     private final LeaveRequestService leaveRequestService;
+    private final ShiftService shiftService;
+    private final NotificationService notificationService;
+    private final AuditLogService auditLogService;
     private final LocalTime startTime;
     private final LocalTime endTime;
     private final LocalTime lateAfter;
@@ -41,6 +45,9 @@ public class AttendanceService {
                              UserRepository userRepository,
                              GeofenceService geofenceService,
                              LeaveRequestService leaveRequestService,
+                             ShiftService shiftService,
+                             NotificationService notificationService,
+                             AuditLogService auditLogService,
                              @Value("${app.attendance.start-time}") String startTime,
                              @Value("${app.attendance.end-time}") String endTime,
                              @Value("${app.attendance.late-after}") String lateAfter,
@@ -50,6 +57,9 @@ public class AttendanceService {
         this.userRepository = userRepository;
         this.geofenceService = geofenceService;
         this.leaveRequestService = leaveRequestService;
+        this.shiftService = shiftService;
+        this.notificationService = notificationService;
+        this.auditLogService = auditLogService;
         this.startTime = LocalTime.parse(startTime);
         this.endTime = LocalTime.parse(endTime);
         this.lateAfter = LocalTime.parse(lateAfter);
@@ -78,6 +88,11 @@ public class AttendanceService {
             throw new IllegalStateException("Attendance already marked for today");
         }
 
+        ShiftAssignment shift = shiftService.getActiveShiftEntity(email);
+        LocalTime shiftStart = shift != null ? shift.getStartTime() : startTime;
+        LocalTime shiftEnd = shift != null ? shift.getEndTime() : endTime;
+        LocalTime shiftLateAfter = shift != null ? shift.getLateAfter() : lateAfter;
+
         Geofence geofence = geofenceService.getGeofenceEntity();
         double distanceMeters = calculateDistanceMeters(
                 request.getLatitude(),
@@ -95,16 +110,16 @@ public class AttendanceService {
         }
 
         LocalTime currentTime = LocalTime.now();
-        if (currentTime.isBefore(startTime) || currentTime.isAfter(endTime)) {
+        if (currentTime.isBefore(shiftStart) || currentTime.isAfter(shiftEnd)) {
             throw new IllegalStateException(
                     "Attendance can be marked only between "
-                            + startTime.format(TIME_FORMATTER)
+                            + shiftStart.format(TIME_FORMATTER)
                             + " and "
-                            + endTime.format(TIME_FORMATTER)
+                            + shiftEnd.format(TIME_FORMATTER)
             );
         }
 
-        AttendanceStatus status = currentTime.isAfter(lateAfter) ? AttendanceStatus.LATE : AttendanceStatus.PRESENT;
+        AttendanceStatus status = currentTime.isAfter(shiftLateAfter) ? AttendanceStatus.LATE : AttendanceStatus.PRESENT;
 
         Attendance attendance = new Attendance();
         attendance.setUser(user);
@@ -124,8 +139,22 @@ public class AttendanceService {
         }
 
         AttendanceResponse response = mapAttendance(attendance);
+        response.setScheduledStartTime(shiftStart);
+        response.setScheduledEndTime(shiftEnd);
+        response.setScheduledLateAfter(shiftLateAfter);
         response.setSuccess(true);
         response.setMessage("Attendance marked successfully");
+        auditLogService.record(email, "ATTENDANCE_MARKED", "ATTENDANCE", attendance.getId(),
+                "Marked attendance as " + status.name() + " at " + currentTime);
+        if (status == AttendanceStatus.LATE) {
+            notificationService.notifyUser(
+                    email,
+                    "Late attendance recorded",
+                    "Your attendance on " + today + " was recorded as late at " + currentTime + ".",
+                    "ATTENDANCE",
+                    "/user-dashboard.html"
+            );
+        }
         return response;
     }
 
@@ -219,6 +248,16 @@ public class AttendanceService {
         response.setDistanceMeters(attendance.getDistanceMeters());
         response.setAccuracyMeters(attendance.getAccuracyMeters());
         response.setNote(attendance.getNote());
+        ShiftAssignment shift = shiftService.getActiveShiftEntity(attendance.getUser().getEmail());
+        if (shift != null) {
+            response.setScheduledStartTime(shift.getStartTime());
+            response.setScheduledEndTime(shift.getEndTime());
+            response.setScheduledLateAfter(shift.getLateAfter());
+        } else {
+            response.setScheduledStartTime(startTime);
+            response.setScheduledEndTime(endTime);
+            response.setScheduledLateAfter(lateAfter);
+        }
         response.setMessage("Record fetched");
         return response;
     }

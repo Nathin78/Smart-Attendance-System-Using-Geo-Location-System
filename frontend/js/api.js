@@ -19,7 +19,8 @@ const SmartApp = (() => {
         localStorage.setItem(USER_KEY, JSON.stringify({
             name: authResponse.name,
             email: authResponse.email,
-            role: authResponse.role
+            role: authResponse.role,
+            avatarUrl: authResponse.avatarUrl || null
         }));
     }
 
@@ -37,6 +38,10 @@ const SmartApp = (() => {
 
     function getThemeLabel(themeId) {
         return THEMES.find(theme => theme.id === themeId)?.label || "Teal Ocean";
+    }
+
+    function isAdminLikeRole(role) {
+        return ["ADMIN", "HR", "SUPERVISOR"].includes(role);
     }
 
     function initThemeControl(buttonId = "themeToggleBtn") {
@@ -72,9 +77,17 @@ const SmartApp = (() => {
         if (roleNode) roleNode.textContent = user.role || "-";
         if (shortNode) shortNode.textContent = user.name || "User";
         if (avatarNode) avatarNode.textContent = (user.name || "U").trim().charAt(0).toUpperCase();
+        if (avatarNode && user.avatarUrl) {
+            avatarNode.textContent = "";
+            avatarNode.style.backgroundImage = `url(${user.avatarUrl})`;
+            avatarNode.style.backgroundSize = "cover";
+            avatarNode.style.backgroundPosition = "center";
+        } else if (avatarNode) {
+            avatarNode.style.backgroundImage = "";
+        }
 
         if (editProfileNode) {
-            if (user.role === "USER") {
+            if (!isAdminLikeRole(user.role)) {
                 editProfileNode.hidden = false;
                 editProfileNode.addEventListener("click", () => {
                     window.location.href = options.profileHref || "profile.html";
@@ -145,7 +158,7 @@ const SmartApp = (() => {
             window.location.href = "login.html";
             return;
         }
-        if (user.role === "ADMIN") {
+        if (isAdminLikeRole(user.role)) {
             window.location.href = "admin-dashboard.html";
             return;
         }
@@ -164,11 +177,102 @@ const SmartApp = (() => {
             window.location.href = "login.html";
             return null;
         }
-        if (requiredRole && user.role !== requiredRole) {
-            redirectByRole(user);
-            return null;
+        if (requiredRole) {
+            const requiredRoles = Array.isArray(requiredRole) ? requiredRole : [requiredRole];
+            if (!requiredRoles.includes(user.role)) {
+                redirectByRole(user);
+                return null;
+            }
         }
         return user;
+    }
+
+    async function initPwaSupport() {
+        if (!("serviceWorker" in navigator)) {
+            return;
+        }
+        try {
+            await navigator.serviceWorker.register("sw.js");
+        } catch (err) {
+            console.warn("Service worker registration failed", err);
+        }
+    }
+
+    async function requestNotificationPermission() {
+        if (!("Notification" in window)) return false;
+        if (Notification.permission === "granted") return true;
+        if (Notification.permission === "denied") return false;
+        const result = await Notification.requestPermission();
+        return result === "granted";
+    }
+
+    async function initNotificationPolling(options = {}) {
+        const badgeNode = options.badgeId ? document.getElementById(options.badgeId) : null;
+        const listNode = options.listId ? document.getElementById(options.listId) : null;
+        const endpoint = options.endpoint || "/api/notifications/unread";
+        const intervalMs = options.intervalMs || 30000;
+        const seenKey = options.seenKey || "sa_seen_notifications";
+        const seen = new Set(JSON.parse(sessionStorage.getItem(seenKey) || "[]"));
+
+        const renderBadge = (count) => {
+            if (!badgeNode) return;
+            badgeNode.textContent = String(count);
+            badgeNode.hidden = count === 0;
+        };
+
+        const renderList = (items) => {
+            if (!listNode) return;
+            if (!items.length) {
+                listNode.innerHTML = "<p class='muted'>No new notifications.</p>";
+                return;
+            }
+
+            listNode.innerHTML = items.map(item => `
+                <article class="notification-item ${item.category ? item.category.toLowerCase() : ""}">
+                    <strong>${escapeHtml(item.title || "Notification")}</strong>
+                    <p>${escapeHtml(item.message || "")}</p>
+                </article>
+            `).join("");
+        };
+
+        const poll = async () => {
+            const response = await apiRequest(endpoint);
+            if (!response.ok) return [];
+            const items = Array.isArray(response.data) ? response.data : [];
+            renderBadge(items.length);
+            renderList(items);
+
+            const canNotify = await requestNotificationPermission();
+            if (canNotify && items.length) {
+                items.forEach(item => {
+                    if (seen.has(item.id)) return;
+                    seen.add(item.id);
+                    try {
+                        new Notification(item.title || "Notification", {
+                            body: item.message || "",
+                            icon: "favicon.svg"
+                        });
+                    } catch (err) {
+                        // Ignore notification display issues.
+                    }
+                });
+                sessionStorage.setItem(seenKey, JSON.stringify([...seen].slice(-100)));
+            }
+
+            return items;
+        };
+
+        await poll();
+        const timer = setInterval(poll, intervalMs);
+        return () => clearInterval(timer);
+    }
+
+    function escapeHtml(value) {
+        return String(value)
+            .replace(/&/g, "&amp;")
+            .replace(/</g, "&lt;")
+            .replace(/>/g, "&quot;")
+            .replace(/'/g, "&#39;");
     }
 
     function showAlert(targetId, message, type = "info") {
@@ -191,7 +295,8 @@ const SmartApp = (() => {
 
     async function apiRequest(path, options = {}, withAuth = true) {
         const headers = { ...(options.headers || {}) };
-        if (options.body && !headers["Content-Type"] && !headers["content-type"]) {
+        const isFormData = typeof FormData !== "undefined" && options.body instanceof FormData;
+        if (options.body && !isFormData && !headers["Content-Type"] && !headers["content-type"]) {
             headers["Content-Type"] = "application/json";
         }
         if (withAuth && getToken()) {
@@ -320,11 +425,19 @@ const SmartApp = (() => {
         hideAlert,
         initHeaderClock,
         initProfileMenu,
+        initNotificationPolling,
+        initPwaSupport,
         initThemeControl,
+        isAdminLikeRole,
         logout,
         redirectByRole,
         requireAuth,
+        requestNotificationPermission,
         saveSession,
         showAlert
     };
 })();
+
+window.addEventListener("load", () => {
+    SmartApp.initPwaSupport();
+});

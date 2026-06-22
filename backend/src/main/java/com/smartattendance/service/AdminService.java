@@ -1,10 +1,15 @@
 package com.smartattendance.service;
 
 import com.smartattendance.dto.AttendanceResponse;
+import com.smartattendance.dto.AuditLogResponse;
 import com.smartattendance.dto.ReportResponse;
+import com.smartattendance.dto.RoleUpdateRequest;
+import com.smartattendance.dto.ShiftRequest;
+import com.smartattendance.dto.ShiftResponse;
 import com.smartattendance.dto.UserResponse;
 import com.smartattendance.entity.Attendance;
 import com.smartattendance.entity.AttendanceStatus;
+import com.smartattendance.entity.Role;
 import com.smartattendance.entity.User;
 import com.smartattendance.repository.AttendanceRepository;
 import com.smartattendance.repository.UserRepository;
@@ -34,26 +39,87 @@ public class AdminService {
     private final AttendanceRepository attendanceRepository;
     private final AttendanceService attendanceService;
     private final LeaveRequestService leaveRequestService;
+    private final ShiftService shiftService;
+    private final AuditLogService auditLogService;
+    private final NotificationService notificationService;
 
     public AdminService(UserRepository userRepository,
                         AttendanceRepository attendanceRepository,
                         AttendanceService attendanceService,
-                        LeaveRequestService leaveRequestService) {
+                        LeaveRequestService leaveRequestService,
+                        ShiftService shiftService,
+                        AuditLogService auditLogService,
+                        NotificationService notificationService) {
         this.userRepository = userRepository;
         this.attendanceRepository = attendanceRepository;
         this.attendanceService = attendanceService;
         this.leaveRequestService = leaveRequestService;
+        this.shiftService = shiftService;
+        this.auditLogService = auditLogService;
+        this.notificationService = notificationService;
     }
 
     public List<UserResponse> getAllUsers() {
         return userRepository.findAll().stream()
-                .map(user -> new UserResponse(
-                        user.getId(),
-                        user.getName(),
-                        user.getEmail(),
-                        user.getRole().name()
-                ))
+                .map(user -> {
+                    UserResponse response = new UserResponse(
+                            user.getId(),
+                            user.getName(),
+                            user.getEmail(),
+                            user.getRole().name()
+                    );
+                    response.setAvatarUrl(user.getAvatarUrl());
+                    return response;
+                })
                 .toList();
+    }
+
+    public UserResponse updateUserRole(Long userId, RoleUpdateRequest request, String actorEmail) {
+        User user = userRepository.findById(userId)
+                .orElseThrow(() -> new IllegalArgumentException("User not found"));
+
+        Role role = Role.valueOf(request.getRole().trim().toUpperCase());
+        if (role == Role.ADMIN && !Role.ADMIN.name().equals(user.getRole().name())) {
+            // allow admin promotions but keep the branch explicit for auditability
+        }
+
+        user.setRole(role);
+        userRepository.save(user);
+        auditLogService.record(actorEmail, "USER_ROLE_UPDATED", "USER", user.getId(), "Role changed to " + role.name());
+        notificationService.notifyUser(
+                user.getEmail(),
+                "Role updated",
+                "Your account role has been updated to " + role.name() + ".",
+                "ACCOUNT",
+                "/user-dashboard.html"
+        );
+
+        UserResponse response = new UserResponse(user.getId(), user.getName(), user.getEmail(), user.getRole().name());
+        response.setAvatarUrl(user.getAvatarUrl());
+        return response;
+    }
+
+    public List<ShiftResponse> getAllShifts() {
+        return shiftService.getAllShifts();
+    }
+
+    public ShiftResponse updateShift(Long userId, ShiftRequest request, String actorEmail) {
+        ShiftResponse response = shiftService.upsertShift(userId, request);
+        auditLogService.record(actorEmail, "SHIFT_UPDATED", "SHIFT", response.getId(),
+                "Shift set for " + response.getUserEmail() + " from " + response.getStartTime()
+                        + " to " + response.getEndTime());
+        notificationService.notifyUser(
+                response.getUserEmail(),
+                "Shift schedule updated",
+                "Your working hours were updated to " + response.getStartTime() + " - " + response.getEndTime() + ".",
+                "SHIFT",
+                "/user-dashboard.html"
+        );
+        return response;
+    }
+
+    public List<AuditLogResponse> getAuditLogs() {
+        return auditLogService.getRecentLogs();
     }
 
     public ReportResponse getReport(LocalDate date) {

@@ -6,6 +6,8 @@
     <title>User Dashboard | Smart Attendance</title>
     <script src="js/local-dev.js"></script>
     <link rel="icon" href="favicon.svg" type="image/svg+xml">
+    <link rel="manifest" href="manifest.json">
+    <meta name="theme-color" content="#0e7490">
     <link rel="preconnect" href="https://fonts.googleapis.com">
     <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
     <link href="https://fonts.googleapis.com/css2?family=Poppins:wght@400;600;700&family=Space+Grotesk:wght@500;700&display=swap" rel="stylesheet">
@@ -60,6 +62,20 @@
             <h2>Quick Tips</h2>
             <p class="subtext">Enable high-accuracy GPS for reliable marking.</p>
             <p class="subtext">Attendance can be marked only once per day and only within the allowed radius.</p>
+        </article>
+    </section>
+
+    <section class="grid cols-2" style="margin-top: 18px;">
+        <article class="card">
+            <h2>Work Schedule</h2>
+            <p class="subtext">Shift: <strong id="shiftRange">Loading...</strong></p>
+            <p class="subtext">Late after: <strong id="shiftLateAfter">Loading...</strong></p>
+            <p class="subtext">Last updated: <strong id="shiftUpdatedAt">-</strong></p>
+        </article>
+        <article class="card">
+            <h2>Notifications</h2>
+            <p class="subtext">Unread: <strong id="notificationSummaryCount">0</strong></p>
+            <div id="notificationFeed" class="notification-feed"></div>
         </article>
     </section>
 
@@ -212,6 +228,24 @@
                 </thead>
                 <tbody id="attendanceRows"></tbody>
             </table>
+        </div>
+    </section>
+
+    <section class="card" style="margin-top: 18px;">
+        <h2>Attendance Analytics</h2>
+        <div class="grid cols-3">
+            <article class="chart-card">
+                <h3>Monthly Trend</h3>
+                <canvas id="monthlyTrendChart" width="360" height="220"></canvas>
+            </article>
+            <article class="chart-card">
+                <h3>Late Frequency</h3>
+                <canvas id="lateFrequencyChart" width="360" height="220"></canvas>
+            </article>
+            <article class="chart-card">
+                <h3>Leave Patterns</h3>
+                <canvas id="leavePatternChart" width="360" height="220"></canvas>
+            </article>
         </div>
     </section>
 </main>

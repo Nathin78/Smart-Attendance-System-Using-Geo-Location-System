@@ -53,7 +53,9 @@ public class AuthService {
                 userDetails,
                 Map.of("role", user.getRole().name(), "name", user.getName())
         );
-        return new AuthResponse(token, user.getRole().name(), user.getName(), user.getEmail());
+        AuthResponse response = new AuthResponse(token, user.getRole().name(), user.getName(), user.getEmail());
+        response.setAvatarUrl(user.getAvatarUrl());
+        return response;
     }
 
     public AuthResponse login(LoginRequest request) {
@@ -79,6 +81,8 @@ public class AuthService {
                 userDetails,
                 Map.of("role", user.getRole().name(), "name", user.getName())
         );
-        return new AuthResponse(token, user.getRole().name(), user.getName(), user.getEmail());
+        AuthResponse response = new AuthResponse(token, user.getRole().name(), user.getName(), user.getEmail());
+        response.setAvatarUrl(user.getAvatarUrl());
+        return response;
     }
 }

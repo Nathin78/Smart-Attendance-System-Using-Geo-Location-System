@@ -1,5 +1,5 @@
 document.addEventListener("DOMContentLoaded", async () => {
-    const user = SmartApp.requireAuth("ADMIN");
+    const user = SmartApp.requireAuth(["ADMIN", "HR", "SUPERVISOR"]);
     if (!user) return;
 
     SmartApp.initThemeControl();
@@ -19,8 +19,16 @@ document.addEventListener("DOMContentLoaded", async () => {
     document.getElementById("dailyExportBtn").addEventListener("click", () => exportReport("daily", reportDateInput.value));
     document.getElementById("weeklyExportBtn").addEventListener("click", () => exportReport("weekly", reportDateInput.value));
     document.getElementById("monthlyExportBtn").addEventListener("click", () => exportReport("monthly", reportDateInput.value));
+    document.getElementById("shiftForm").addEventListener("submit", saveShift);
 
-    await Promise.all([loadUsers(), loadReport(reportDateInput.value), loadGeofence(), loadLeaveRequests()]);
+    await Promise.all([
+        loadUsers(),
+        loadReport(reportDateInput.value),
+        loadGeofence(),
+        loadLeaveRequests(),
+        loadShifts(),
+        loadAuditLogs()
+    ]);
 
     function startAutoRefresh() {
         if (refreshTimer) return;
@@ -28,6 +36,8 @@ document.addEventListener("DOMContentLoaded", async () => {
             loadUsers();
             loadReport(reportDateInput.value);
             loadLeaveRequests();
+            loadShifts();
+            loadAuditLogs();
         }, 30000);
     }
 
@@ -63,14 +73,37 @@ async function loadUsers() {
         return;
     }
 
-    tbody.innerHTML = response.data.map(user => `
+    const users = Array.isArray(response.data) ? response.data : [];
+    tbody.innerHTML = users.map(user => `
         <tr>
             <td>${user.id}</td>
-            <td>${user.name}</td>
-            <td>${user.email}</td>
-            <td>${user.role}</td>
+            <td>${escapeHtml(user.name || "-")}</td>
+            <td>${escapeHtml(user.email || "-")}</td>
+            <td>${escapeHtml(user.role || "-")}</td>
         </tr>
     `).join("");
+
+    document.getElementById("roleRows").innerHTML = users.map(user => `
+        <tr>
+            <td>${escapeHtml(user.name || "-")}<br><span class="muted">${escapeHtml(user.email || "")}</span></td>
+            <td>
+                <select data-role-user="${user.id}">
+                    ${renderRoleOptions(user.role)}
+                </select>
+            </td>
+            <td>
+                <button class="btn-small btn-primary" type="button" data-save-role="${user.id}">Save</button>
+            </td>
+        </tr>
+    `).join("");
+
+    const shiftUserSelect = document.getElementById("shiftUserId");
+    shiftUserSelect.innerHTML = users.map(user => `<option value="${user.id}">${escapeHtml(user.name || "-")} (${escapeHtml(user.email || "-")})</option>`).join("");
+
+    document.querySelectorAll("[data-save-role]").forEach(button => {
+        button.addEventListener("click", () => updateUserRole(button.dataset.saveRole));
+    });
+
 }
 
 async function loadReport(date) {
@@ -157,6 +190,55 @@ async function loadLeaveRequests() {
     });
 }
 
+async function loadShifts() {
+    const response = await SmartApp.apiRequest("/api/admin/shifts");
+    const tbody = document.getElementById("shiftRows");
+    if (!response.ok) {
+        tbody.innerHTML = "<tr><td colspan='4' class='muted'>Unable to load shifts.</td></tr>";
+        return;
+    }
+
+    const shifts = Array.isArray(response.data) ? response.data : [];
+    if (!shifts.length) {
+        tbody.innerHTML = "<tr><td colspan='4' class='muted'>No shift assignments yet.</td></tr>";
+        return;
+    }
+
+    tbody.innerHTML = shifts.map(item => `
+        <tr>
+            <td>${escapeHtml(item.userName || "-")}<br><span class="muted">${escapeHtml(item.userEmail || "")}</span></td>
+            <td>${SmartApp.formatTime(item.startTime)} - ${SmartApp.formatTime(item.endTime)}</td>
+            <td>${SmartApp.formatTime(item.lateAfter)}</td>
+            <td><span class="status-pill ${item.active ? "approved" : "muted"}">${item.active ? "Active" : "Inactive"}</span></td>
+        </tr>
+    `).join("");
+}
+
+async function loadAuditLogs() {
+    const response = await SmartApp.apiRequest("/api/admin/audit-logs");
+    const tbody = document.getElementById("auditRows");
+    if (!response.ok) {
+        tbody.innerHTML = "<tr><td colspan='5' class='muted'>Unable to load audit log.</td></tr>";
+        return;
+    }
+
+    const logs = Array.isArray(response.data) ? response.data : [];
+    if (!logs.length) {
+        tbody.innerHTML = "<tr><td colspan='5' class='muted'>No audit entries yet.</td></tr>";
+        return;
+    }
+
+    tbody.innerHTML = logs.slice(0, 25).map(item => `
+        <tr>
+            <td>${new Date(item.createdAt).toLocaleString()}</td>
+            <td>${escapeHtml(item.actorEmail || "-")}</td>
+            <td>${escapeHtml(item.action || "-")}</td>
+            <td>${escapeHtml([item.targetType, item.targetId].filter(Boolean).join("#") || "-")}</td>
+            <td>${escapeHtml(item.details || "-")}</td>
+        </tr>
+    `).join("");
+}
+
 async function reviewLeaveRequest(id, status) {
     const verb = status === "APPROVED" ? "approving" : "rejecting";
     const adminComment = window.prompt(`Add an optional comment for ${verb} this leave request:`, "");
@@ -176,6 +258,24 @@ async function reviewLeaveRequest(id, status) {
     SmartApp.showAlert("adminAlert", `Leave request ${status === "APPROVED" ? "approved" : "rejected"} successfully`, "success");
     await loadLeaveRequests();
     await loadReport(document.getElementById("reportDate").value);
+}
+
+async function updateUserRole(userId) {
+    const select = document.querySelector(`[data-role-user="${userId}"]`);
+    if (!select) return;
+
+    const response = await SmartApp.apiRequest(`/api/admin/users/${userId}/role`, {
+        method: "PUT",
+        body: JSON.stringify({ role: select.value })
+    });
+
+    if (!response.ok) {
+        SmartApp.showAlert("adminAlert", getAdminErrorMessage(response, "Failed to update user role"), "error");
+        return;
+    }
+
+    SmartApp.showAlert("adminAlert", `User role updated to ${select.value}`, "success");
+    await loadUsers();
 }
 
 async function loadGeofence() {
@@ -211,6 +311,30 @@ async function updateGeofence(event) {
     }
 
     SmartApp.showAlert("adminAlert", "Geofence updated successfully", "success");
+}
+
+async function saveShift(event) {
+    event.preventDefault();
+    const userId = document.getElementById("shiftUserId").value;
+    const payload = {
+        startTime: document.getElementById("shiftStartTime").value,
+        endTime: document.getElementById("shiftEndTime").value,
+        lateAfter: document.getElementById("shiftLateAfterTime").value,
+        active: document.getElementById("shiftActive").checked
+    };
+
+    const response = await SmartApp.apiRequest(`/api/admin/shifts/${userId}`, {
+        method: "PUT",
+        body: JSON.stringify(payload)
+    });
+
+    if (!response.ok) {
+        SmartApp.showAlert("adminAlert", getAdminErrorMessage(response, "Failed to save shift"), "error");
+        return;
+    }
+
+    SmartApp.showAlert("adminAlert", "Shift saved successfully", "success");
+    await loadShifts();
 }
 
 async function exportReport(type, date) {
@@ -299,4 +423,9 @@ function getAdminErrorMessage(response, fallbackMessage) {
         return "Resource not found.";
     }
     return response.data?.message || fallbackMessage;
+}
+
+function renderRoleOptions(currentRole) {
+    const roles = ["USER", "SUPERVISOR", "HR", "ADMIN"];
+    return roles.map(role => `<option value="${role}" ${role === currentRole ? "selected" : ""}>${role}</option>`).join("");
 }
