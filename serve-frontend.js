@@ -21,7 +21,7 @@ const mime = {
 http.createServer((req, res) => {
   const rawPath = req.url.split('?')[0];
   let safePath = decodeURIComponent(rawPath || '/');
-  if (safePath === '/' || safePath === '\\') safePath = '/login.html';
+  if (safePath === '/' || safePath === '\\') safePath = '/index.html';
   safePath = path.posix.normalize(safePath).replace(/^\/+/, '');
   const filePath = path.resolve(root, safePath);
 
@@ -43,5 +43,5 @@ http.createServer((req, res) => {
     fs.createReadStream(filePath).pipe(res);
   });
 }).listen(port, () => {
-  console.log(`Frontend running at http://localhost:${port}/login.html`);
+  console.log(`Frontend running at http://localhost:${port}/index.html`);
 });

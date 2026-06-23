@@ -1,15 +1,145 @@
-﻿<!DOCTYPE html>
+<!DOCTYPE html>
 <html lang="en">
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Smart Attendance System</title>
+    <title>Smart Attendance | Geo-Verified Workforce Platform</title>
     <script src="js/local-dev.js"></script>
     <link rel="icon" href="favicon.svg" type="image/svg+xml">
     <link rel="manifest" href="manifest.json">
-    <meta name="theme-color" content="#0e7490">
-    <meta http-equiv="refresh" content="0; url=login.html">
+    <meta name="theme-color" content="#0f766e">
+    <link rel="preconnect" href="https://fonts.googleapis.com">
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+    <link href="https://fonts.googleapis.com/css2?family=Poppins:wght@400;500;600;700&family=Space+Grotesk:wght@500;700&display=swap" rel="stylesheet">
+    <link rel="stylesheet" href="css/styles.css">
 </head>
 <body>
+<header class="site-header">
+    <div class="site-header-inner">
+        <a class="site-brand" href="index.html">Smart Attendance</a>
+        <nav class="site-nav" aria-label="Primary">
+            <a href="about.html">About Us</a>
+            <a href="contact.html">Contact Us</a>
+            <a href="login.html">Login Portal</a>
+        </nav>
+    </div>
+</header>
+<main class="page-wrap landing-page">
+    <section class="card hero-banner">
+        <div class="hero-layout">
+            <div class="hero-banner-copy">
+                <span class="eyebrow">Geo-verified attendance platform</span>
+                <h1>Attendance operations that look modern and work like a real office system.</h1>
+                <p class="subtext">
+                    Smart Attendance helps teams and institutions track presence with GPS validation,
+                    geofence checks, leave approval, audit logs, and role-based dashboards.
+                </p>
+                <div class="actions">
+                    <button class="btn-primary" type="button" onclick="window.location.href='login.html'">Open Login Portal</button>
+                    <button class="btn-secondary" type="button" onclick="window.location.href='user-dashboard.html'">View User Dashboard</button>
+                </div>
+                <div class="hero-metrics" style="margin-top: 22px;">
+                    <article class="hero-metric">
+                        <span>Secure access</span>
+                        <strong>JWT role-based login</strong>
+                    </article>
+                    <article class="hero-metric">
+                        <span>Attendance flow</span>
+                        <strong>GPS + geofence checks</strong>
+                    </article>
+                    <article class="hero-metric">
+                        <span>Manager view</span>
+                        <strong>Reports, shifts, leaves</strong>
+                    </article>
+                    <article class="hero-metric">
+                        <span>Audit trail</span>
+                        <strong>Traceable admin actions</strong>
+                    </article>
+                </div>
+            </div>
+            <aside class="hero-panel" aria-label="Platform highlights">
+                <article class="panel-card">
+                    <strong>Built for real teams</strong>
+                    <p>Designed for attendance workflows in schools, offices, and field operations.</p>
+                </article>
+                <article class="panel-card">
+                    <strong>Live validations</strong>
+                    <p>Mark attendance only when users are inside the approved geofence radius.</p>
+                </article>
+                <div class="dashboard-summary">
+                    <div class="summary-card">
+                        <p class="label">Today</p>
+                        <strong>Presence tracking enabled</strong>
+                    </div>
+                    <div class="summary-card">
+                        <p class="label">Workflow</p>
+                        <strong>Login, mark, review, approve</strong>
+                    </div>
+                </div>
+            </aside>
+        </div>
+    </section>
+
+    <section class="feature-grid">
+        <article class="feature-card">
+            <div class="icon-chip">01</div>
+            <h2>Employee login</h2>
+            <p>Users sign in, see their schedule, and mark attendance from a streamlined dashboard.</p>
+        </article>
+        <article class="feature-card">
+            <div class="icon-chip">02</div>
+            <h2>Location proof</h2>
+            <p>GPS distance and geofence validation keep attendance records accurate and defensible.</p>
+        </article>
+        <article class="feature-card">
+            <div class="icon-chip">03</div>
+            <h2>Manager controls</h2>
+            <p>Admins manage shifts, leaves, users, and daily attendance reports from one place.</p>
+        </article>
+        <article class="feature-card">
+            <div class="icon-chip">04</div>
+            <h2>Audit ready</h2>
+            <p>Every important action is traceable so teams can review decisions with confidence.</p>
+        </article>
+    </section>
+
+    <section class="card">
+        <h2>How it works</h2>
+        <div class="workflow">
+            <article class="workflow-step">
+                <span class="step-number">1</span>
+                <h3>Sign in securely</h3>
+                <p>Choose the user or admin login path and authenticate with your assigned role.</p>
+            </article>
+            <article class="workflow-step">
+                <span class="step-number">2</span>
+                <h3>Validate location</h3>
+                <p>The app checks your live location against the approved attendance radius.</p>
+            </article>
+            <article class="workflow-step">
+                <span class="step-number">3</span>
+                <h3>Mark attendance</h3>
+                <p>Attendance records are saved with time, status, and distance metadata for review.</p>
+            </article>
+            <article class="workflow-step">
+                <span class="step-number">4</span>
+                <h3>Review reports</h3>
+                <p>Managers can review reports, export data, and handle leaves and shifts quickly.</p>
+            </article>
+        </div>
+    </section>
+</main>
+<footer class="site-footer">
+    <div class="site-footer-inner">
+        <span>&copy; 2026 Smart Attendance</span>
+        <span class="footer-links">
+            <a href="about.html">About Us</a>
+            <a href="contact.html">Contact Us</a>
+            <a href="login.html">Login Portal</a>
+        </span>
+    </div>
+</footer>
+<script src="js/config.js"></script>
+<script src="js/api.js"></script>
 </body>
 </html>
