@@ -206,6 +206,24 @@ const SmartApp = (() => {
         return result === "granted";
     }
 
+    function isSafeNotificationLink(linkUrl) {
+        return typeof linkUrl === "string" && linkUrl.trim().startsWith("/");
+    }
+
+    async function markNotificationRead(notificationId) {
+        if (!notificationId) {
+            return {
+                ok: false,
+                status: 0,
+                data: { message: "Notification id is required" }
+            };
+        }
+
+        return apiRequest(`/api/notifications/${notificationId}/read`, {
+            method: "PATCH"
+        });
+    }
+
     async function initNotificationPolling(options = {}) {
         const badgeNode = options.badgeId ? document.getElementById(options.badgeId) : null;
         const listNode = options.listId ? document.getElementById(options.listId) : null;
@@ -229,10 +247,48 @@ const SmartApp = (() => {
 
             listNode.innerHTML = items.map(item => `
                 <article class="notification-item ${item.category ? item.category.toLowerCase() : ""}">
-                    <strong>${escapeHtml(item.title || "Notification")}</strong>
-                    <p>${escapeHtml(item.message || "")}</p>
+                    <div class="activity-top">
+                        <div>
+                            <strong>${escapeHtml(item.title || "Notification")}</strong>
+                            <p>${escapeHtml(item.message || "")}</p>
+                            <small class="muted">${item.createdAt ? new Date(item.createdAt).toLocaleString("en-IN") : ""}</small>
+                        </div>
+                        <span class="status-pill ${item.readAt ? "muted" : "pending"}">${item.readAt ? "Read" : "Unread"}</span>
+                    </div>
+                    <div class="table-actions" style="margin-top: 10px;">
+                        ${isSafeNotificationLink(item.linkUrl) ? `<button class="btn-secondary btn-small" type="button" data-notification-open="${escapeHtml(item.linkUrl.trim())}">Open</button>` : ""}
+                        ${item.readAt ? "" : `<button class="btn-primary btn-small" type="button" data-notification-read="${item.id}">Mark read</button>`}
+                    </div>
                 </article>
             `).join("");
+        };
+
+        const handleListClick = async (event) => {
+            const openButton = event.target.closest("[data-notification-open]");
+            if (openButton) {
+                const targetUrl = openButton.dataset.notificationOpen;
+                if (isSafeNotificationLink(targetUrl)) {
+                    window.location.href = targetUrl;
+                }
+                return;
+            }
+
+            const readButton = event.target.closest("[data-notification-read]");
+            if (!readButton) return;
+
+            const notificationId = readButton.dataset.notificationRead;
+            readButton.disabled = true;
+            const originalLabel = readButton.textContent;
+            readButton.textContent = "Marking...";
+
+            const response = await markNotificationRead(notificationId);
+            if (!response.ok) {
+                readButton.disabled = false;
+                readButton.textContent = originalLabel || "Mark read";
+                return;
+            }
+
+            await poll();
         };
 
         const poll = async () => {
@@ -263,8 +319,16 @@ const SmartApp = (() => {
         };
 
         await poll();
+        if (listNode) {
+            listNode.addEventListener("click", handleListClick);
+        }
         const timer = setInterval(poll, intervalMs);
-        return () => clearInterval(timer);
+        return () => {
+            clearInterval(timer);
+            if (listNode) {
+                listNode.removeEventListener("click", handleListClick);
+            }
+        };
     }
 
     function escapeHtml(value) {
@@ -429,6 +493,7 @@ const SmartApp = (() => {
         initPwaSupport,
         initThemeControl,
         isAdminLikeRole,
+        markNotificationRead,
         logout,
         redirectByRole,
         requireAuth,

@@ -10,6 +10,8 @@ document.addEventListener("DOMContentLoaded", async () => {
     const resetButton = document.getElementById("resetProfileBtn");
     const avatarInput = document.getElementById("avatarInput");
     const avatarPreview = document.getElementById("profilePhotoPreview");
+    const dirtyStateNode = document.getElementById("profileDirtyState");
+    const lastSavedNode = document.getElementById("profileLastSaved");
     let originalProfile = null;
 
     wirePasswordToggle("toggleCurrentPasswordBtn", "currentPasswordInput");
@@ -18,8 +20,17 @@ document.addEventListener("DOMContentLoaded", async () => {
 
     avatarInput?.addEventListener("change", () => {
         const file = avatarInput.files?.[0];
-        if (!file || !avatarPreview) return;
+        if (!file || !avatarPreview) {
+            refreshDirtyState();
+            return;
+        }
         avatarPreview.src = URL.createObjectURL(file);
+        refreshDirtyState();
+    });
+
+    form.querySelectorAll("input, textarea").forEach(element => {
+        element.addEventListener("input", refreshDirtyState);
+        element.addEventListener("change", refreshDirtyState);
     });
 
     form.addEventListener("submit", async (event) => {
@@ -89,6 +100,14 @@ document.addEventListener("DOMContentLoaded", async () => {
         };
         populateProfile(originalProfile);
         clearPasswordFields();
+        refreshDirtyState();
+        const savedAt = new Date().toLocaleTimeString("en-IN", {
+            hour: "2-digit",
+            minute: "2-digit"
+        });
+        if (lastSavedNode) {
+            lastSavedNode.textContent = `Saved at ${savedAt}`;
+        }
         SmartApp.showAlert("profileAlert", "Profile updated successfully", "success");
     });
 
@@ -97,6 +116,7 @@ document.addEventListener("DOMContentLoaded", async () => {
             populateProfile(originalProfile);
         }
         clearPasswordFields();
+        refreshDirtyState();
         SmartApp.hideAlert("profileAlert");
     });
 
@@ -108,6 +128,7 @@ document.addEventListener("DOMContentLoaded", async () => {
 
     originalProfile = response.data;
     populateProfile(originalProfile);
+    refreshDirtyState();
 
     function populateProfile(profile) {
         const avatar = profile.avatarUrl || "favicon.svg";
@@ -133,6 +154,33 @@ document.addEventListener("DOMContentLoaded", async () => {
         document.getElementById("newPasswordInput").value = "";
         document.getElementById("confirmPasswordInput").value = "";
         if (avatarInput) avatarInput.value = "";
+    }
+
+    function refreshDirtyState() {
+        if (!originalProfile) return;
+        const dirty = isDirty();
+        if (dirtyStateNode) {
+            dirtyStateNode.textContent = dirty ? "Unsaved changes" : "No unsaved changes";
+        }
+        if (lastSavedNode) {
+            lastSavedNode.textContent = dirty ? "Changes pending save" : "Saved data is up to date";
+        }
+    }
+
+    function isDirty() {
+        if (!originalProfile) return false;
+
+        const currentName = document.getElementById("profileNameInput").value.trim();
+        const currentEmail = document.getElementById("profileEmailInput").value.trim().toLowerCase();
+        const currentPassword = document.getElementById("currentPasswordInput").value.trim();
+        const newPassword = document.getElementById("newPasswordInput").value.trim();
+        const confirmPassword = document.getElementById("confirmPasswordInput").value.trim();
+        const avatarChanged = Boolean(avatarInput?.files?.length);
+
+        return currentName !== (originalProfile.name || "")
+            || currentEmail !== (originalProfile.email || "")
+            || avatarChanged
+            || Boolean(currentPassword || newPassword || confirmPassword);
     }
 
     async function uploadAvatar(file) {

@@ -24,6 +24,9 @@ Full-stack attendance platform where users can mark attendance only when they ar
 - Admin dashboard with users, reports, and geofence management
 - User analytics dashboard with monthly snapshot, streak tracking, and recent activity
 - Leave request workflow with admin approval and attendance blocking on approved leave days
+- Notification center with unread polling, in-app read actions, and browser notifications
+- Profile management with avatar uploads and live save-state feedback
+- Refreshed high-contrast frontend design system across landing, auth, dashboard, and profile pages
 - Environment-based runtime configuration for DB, CORS, JWT, and admin bootstrap
 
 ## Default Admin Account
@@ -56,6 +59,12 @@ Auto-managed by JPA (`ddl-auto=update`):
 - `GET /api/admin/geofence`
 - `PUT /api/admin/geofence`
 - `GET /api/geofence/current`
+- `GET /api/notifications/unread`
+- `GET /api/notifications`
+- `PATCH /api/notifications/{id}/read`
+- `GET /api/profile/me`
+- `PUT /api/profile/me`
+- `POST /api/profile/me/avatar`
 
 ## Environment Variables
 
@@ -98,4 +107,5 @@ python -m http.server 5500 -d frontend
 - First startup automatically seeds:
   - admin user
   - default geofence (`12.9716`, `77.5946`, radius `300m`)
-"# Smart-Attendance-System-Using-Geo-Location-System" 
+- The frontend stylesheet is mirrored into `backend/src/main/resources/static/` so the packaged app matches the source frontend.
+- JavaScript syntax was checked after the UI refresh to catch obvious client-side errors.

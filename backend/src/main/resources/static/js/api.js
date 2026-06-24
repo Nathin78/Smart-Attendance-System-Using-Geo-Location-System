@@ -19,7 +19,8 @@ const SmartApp = (() => {
         localStorage.setItem(USER_KEY, JSON.stringify({
             name: authResponse.name,
             email: authResponse.email,
-            role: authResponse.role
+            role: authResponse.role,
+            avatarUrl: authResponse.avatarUrl || null
         }));
     }
 
@@ -185,6 +186,148 @@ const SmartApp = (() => {
         node.textContent = "";
     }
 
+    function escapeHtml(value) {
+        return String(value)
+            .replace(/&/g, "&amp;")
+            .replace(/</g, "&lt;")
+            .replace(/>/g, "&gt;")
+            .replace(/"/g, "&quot;")
+            .replace(/'/g, "&#39;");
+    }
+
+    async function requestNotificationPermission() {
+        if (!("Notification" in window)) return false;
+        if (Notification.permission === "granted") return true;
+        if (Notification.permission === "denied") return false;
+        const result = await Notification.requestPermission();
+        return result === "granted";
+    }
+
+    function isSafeNotificationLink(linkUrl) {
+        return typeof linkUrl === "string" && linkUrl.trim().startsWith("/");
+    }
+
+    async function markNotificationRead(notificationId) {
+        if (!notificationId) {
+            return {
+                ok: false,
+                status: 0,
+                data: { message: "Notification id is required" }
+            };
+        }
+
+        return apiRequest(`/api/notifications/${notificationId}/read`, {
+            method: "PATCH"
+        });
+    }
+
+    async function initNotificationPolling(options = {}) {
+        const badgeNode = options.badgeId ? document.getElementById(options.badgeId) : null;
+        const listNode = options.listId ? document.getElementById(options.listId) : null;
+        const endpoint = options.endpoint || "/api/notifications/unread";
+        const intervalMs = options.intervalMs || 30000;
+        const seenKey = options.seenKey || "sa_seen_notifications";
+        const seen = new Set(JSON.parse(sessionStorage.getItem(seenKey) || "[]"));
+
+        const renderBadge = (count) => {
+            if (!badgeNode) return;
+            badgeNode.textContent = String(count);
+            badgeNode.hidden = count === 0;
+        };
+
+        const renderList = (items) => {
+            if (!listNode) return;
+            if (!items.length) {
+                listNode.innerHTML = "<p class='muted'>No new notifications.</p>";
+                return;
+            }
+
+            listNode.innerHTML = items.map(item => `
+                <article class="notification-item ${item.category ? item.category.toLowerCase() : ""}">
+                    <div class="activity-top">
+                        <div>
+                            <strong>${escapeHtml(item.title || "Notification")}</strong>
+                            <p>${escapeHtml(item.message || "")}</p>
+                            <small class="muted">${item.createdAt ? new Date(item.createdAt).toLocaleString("en-IN") : ""}</small>
+                        </div>
+                        <span class="status-pill ${item.readAt ? "muted" : "pending"}">${item.readAt ? "Read" : "Unread"}</span>
+                    </div>
+                    <div class="table-actions" style="margin-top: 10px;">
+                        ${isSafeNotificationLink(item.linkUrl) ? `<button class="btn-secondary btn-small" type="button" data-notification-open="${escapeHtml(item.linkUrl.trim())}">Open</button>` : ""}
+                        ${item.readAt ? "" : `<button class="btn-primary btn-small" type="button" data-notification-read="${item.id}">Mark read</button>`}
+                    </div>
+                </article>
+            `).join("");
+        };
+
+        const handleListClick = async (event) => {
+            const openButton = event.target.closest("[data-notification-open]");
+            if (openButton) {
+                const targetUrl = openButton.dataset.notificationOpen;
+                if (isSafeNotificationLink(targetUrl)) {
+                    window.location.href = targetUrl;
+                }
+                return;
+            }
+
+            const readButton = event.target.closest("[data-notification-read]");
+            if (!readButton) return;
+
+            const notificationId = readButton.dataset.notificationRead;
+            readButton.disabled = true;
+            const originalLabel = readButton.textContent;
+            readButton.textContent = "Marking...";
+
+            const response = await markNotificationRead(notificationId);
+            if (!response.ok) {
+                readButton.disabled = false;
+                readButton.textContent = originalLabel || "Mark read";
+                return;
+            }
+
+            await poll();
+        };
+
+        const poll = async () => {
+            const response = await apiRequest(endpoint);
+            if (!response.ok) return [];
+            const items = Array.isArray(response.data) ? response.data : [];
+            renderBadge(items.length);
+            renderList(items);
+
+            const canNotify = await requestNotificationPermission();
+            if (canNotify && items.length) {
+                items.forEach(item => {
+                    if (seen.has(item.id)) return;
+                    seen.add(item.id);
+                    try {
+                        new Notification(item.title || "Notification", {
+                            body: item.message || "",
+                            icon: "favicon.svg"
+                        });
+                    } catch (err) {
+                        // Ignore notification display issues.
+                    }
+                });
+                sessionStorage.setItem(seenKey, JSON.stringify([...seen].slice(-100)));
+            }
+
+            return items;
+        };
+
+        await poll();
+        if (listNode) {
+            listNode.addEventListener("click", handleListClick);
+        }
+        const timer = setInterval(poll, intervalMs);
+        return () => {
+            clearInterval(timer);
+            if (listNode) {
+                listNode.removeEventListener("click", handleListClick);
+            }
+        };
+    }
+
     function shouldRetryCandidate(response, contentType) {
         return (response.status === 404 || response.status === 405) && !contentType.includes("application/json");
     }
@@ -320,7 +463,9 @@ const SmartApp = (() => {
         hideAlert,
         initHeaderClock,
         initProfileMenu,
+        initNotificationPolling,
         initThemeControl,
+        markNotificationRead,
         logout,
         redirectByRole,
         requireAuth,
