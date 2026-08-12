@@ -6,7 +6,6 @@ Full-stack attendance platform where users can mark attendance only when they ar
 
 - `frontend/` : HTML, CSS, JavaScript client
 - `backend/` : Spring Boot REST API + MySQL + JWT
-
 ## Tech Stack
 
 - Frontend: HTML, CSS, JavaScript
