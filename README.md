@@ -2,7 +2,6 @@
 
 Full-stack attendance platform where users can mark attendance only when they are inside an allowed geofence.
 
-
 ## Tech Stack
 
 - Frontend: HTML, CSS, JavaScript
