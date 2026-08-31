@@ -4,7 +4,7 @@ Full-stack attendance platform where users can mark attendance only when they ar
 
 ## Project Structure
 
-- `frontend/` : HTML, CSS, JavaScript clien
+- `frontend/` : HTML, CSS, JavaScript clie
 ## Tech Stack
 
 - Frontend: HTML, CSS, JavaScript
